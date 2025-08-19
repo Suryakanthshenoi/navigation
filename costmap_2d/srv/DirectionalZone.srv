@@ -1,0 +1,9 @@
+# Service to add a directional zone to the DirectionalLayer
+# Request
+geometry_msgs/Polygon polygon    # Polygon defining the zone boundaries
+uint8 mask                      # 8-bit directional mask (0xFF = all directions, 0x00 = no movement)
+string name                     # Optional zone name for identification
+---
+# Response  
+bool success                    # True if zone was added successfully
+string message                  # Status message

@@ -53,6 +53,11 @@
 #include <global_planner/orientation_filter.h>
 #include <global_planner/GlobalPlannerConfig.h>
 
+// Forward declaration for DirectionalLayer
+namespace costmap_2d {
+    class DirectionalLayer;
+}
+
 namespace global_planner {
 
 class Expander;
@@ -169,6 +174,7 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
          * @brief Store a copy of the current costmap in \a costmap.  Called by makePlan.
          */
         costmap_2d::Costmap2D* costmap_;
+        costmap_2d::Costmap2DROS* costmap_ros_;  // Store layered costmap for accessing plugins
         std::string frame_id_;
         ros::Publisher plan_pub_;
         bool initialized_, allow_unknown_;
@@ -204,6 +210,16 @@ class GlobalPlanner : public nav_core::BaseGlobalPlanner {
 
         dynamic_reconfigure::Server<global_planner::GlobalPlannerConfig> *dsrv_;
         void reconfigureCB(global_planner::GlobalPlannerConfig &config, uint32_t level);
+
+    private:
+        // DirectionalLayer integration
+        costmap_2d::DirectionalLayer* directional_layer_;
+        bool use_directional_constraints_;
+        bool oneway_strict_mode_;  // If true, strictly block disallowed directions
+        double directional_penalty_factor_;
+        
+        // Get directional layer from costmap plugins
+        costmap_2d::DirectionalLayer* getDirectionalLayer();
 
 };
 

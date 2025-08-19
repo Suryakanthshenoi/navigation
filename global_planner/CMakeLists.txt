@@ -44,6 +44,7 @@ add_library(${PROJECT_NAME}
   src/quadratic_calculator.cpp
   src/dijkstra.cpp
   src/astar.cpp
+  src/expander.cpp
   src/grid_path.cpp
   src/gradient_path.cpp
   src/orientation_filter.cpp

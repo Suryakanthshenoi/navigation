@@ -1,0 +1,24 @@
+# Example configuration for global_planner with DirectionalLayer support
+#
+# Add this to your move_base parameter file to enable directional path planning
+
+global_planner:
+  # Standard global_planner parameters
+  use_dijkstra: true
+  use_quadratic: true  
+  use_grid_path: false
+  old_navfn_behavior: false
+  allow_unknown: false
+  
+  # DirectionalLayer integration parameters
+  use_directional_constraints: true
+  directional_penalty_factor: 3.0  # Penalty multiplier for disallowed directions (1.0 = no penalty, higher = more penalty)
+  
+  # Other parameters
+  default_tolerance: 0.0
+  planner_window_x: 0.0
+  planner_window_y: 0.0
+  
+  # Visualization
+  publish_potential: false
+  publish_scale: 100

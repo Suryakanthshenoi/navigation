@@ -1,0 +1,41 @@
+# Test configuration for DirectionalLayer
+global_frame: map
+robot_base_frame: base_link
+update_frequency: 1.0
+publish_frequency: 1.0
+static_map: false
+rolling_window: true
+width: 20.0
+height: 20.0
+resolution: 0.1
+origin_x: -10.0
+origin_y: -10.0
+
+plugins:
+  - {name: directional_layer, type: "costmap_2d::DirectionalLayer"}
+
+directional_layer:
+  enabled: true
+  default_mask: 255  # All directions allowed (0xFF)
+  enable_visualization: true
+  visualization_rate: 2.0  # 2 Hz
+  visualization_frame: "map" 
+  arrow_scale: 1.0
+  
+  # Example zones defined in YAML
+  zones:
+    - name: "one_way_corridor"
+      mask: 17  # Only E (bit 0) and W (bit 4) allowed: 0x11 = 17
+      polygon: [[2.0, 2.0], [8.0, 2.0], [8.0, 3.0], [2.0, 3.0]]
+      
+    - name: "roundabout_north"
+      mask: 6   # Only N (bit 2) and NE (bit 1) allowed: 0x06 = 6  
+      polygon: [[0.0, 5.0], [2.0, 5.0], [2.0, 7.0], [0.0, 7.0]]
+      
+    - name: "no_entry_zone"
+      mask: 0   # No movement allowed: 0x00 = 0
+      polygon: [[-3.0, -3.0], [-1.0, -3.0], [-1.0, -1.0], [-3.0, -1.0]]
+      
+    - name: "diagonal_only"  
+      mask: 170 # Only diagonals allowed: NE, NW, SE, SW = bits 1,3,5,7 = 0xAA = 170
+      polygon: [[5.0, -2.0], [7.0, -2.0], [7.0, 0.0], [5.0, 0.0]]

@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<launch>
+  <!-- Test launch file for DirectionalLayer visualization -->
+  
+  <!-- Static transform for testing -->
+  <node pkg="tf" type="static_transform_publisher" name="map_odom_broadcaster"
+        args="0 0 0 0 0 0 map odom 100" />
+  
+  <!-- Costmap with DirectionalLayer -->
+  <node pkg="costmap_2d" type="costmap_2d_node" name="test_costmap" output="screen">
+    <rosparam file="$(find costmap_2d)/config/test_directional_costmap.yaml" command="load" ns="costmap" />
+    <remap from="map" to="/static_map" />
+    <param name="costmap/footprint" value="[[-0.325, -0.325], [-0.325, 0.325], [0.325, 0.325], [0.46, 0.0], [0.325, -0.325]]"/>
+  </node>
+  
+  <!-- Test zone publisher script -->
+  <node pkg="costmap_2d" type="test_directional_zones.py" name="zone_publisher" output="screen" />
+  
+  <!-- RViz for visualization -->
+  <node pkg="rviz" type="rviz" name="rviz" 
+        args="-d $(find costmap_2d)/config/directional_layer.rviz" />
+
+</launch>

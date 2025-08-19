@@ -65,10 +65,15 @@ bool AStarExpansion::calculatePotentials(unsigned char* costs, double start_x, d
         if (i == goal_i)
             return true;
 
-        add(costs, potential, potential[i], i + 1, end_x, end_y);
-        add(costs, potential, potential[i], i - 1, end_x, end_y);
-        add(costs, potential, potential[i], i + nx_, end_x, end_y);
-        add(costs, potential, potential[i], i - nx_, end_x, end_y);
+        // Calculate current position for directional checks
+        int current_x = i % nx_;
+        int current_y = i / nx_;
+        
+        // Add neighbors with directional constraints
+        addWithDirectionalCheck(costs, potential, potential[i], i + 1, end_x, end_y, current_x, current_y, current_x + 1, current_y);   // East
+        addWithDirectionalCheck(costs, potential, potential[i], i - 1, end_x, end_y, current_x, current_y, current_x - 1, current_y);   // West
+        addWithDirectionalCheck(costs, potential, potential[i], i + nx_, end_x, end_y, current_x, current_y, current_x, current_y + 1); // North
+        addWithDirectionalCheck(costs, potential, potential[i], i - nx_, end_x, end_y, current_x, current_y, current_x, current_y - 1); // South
 
         cycle++;
     }
@@ -88,6 +93,34 @@ void AStarExpansion::add(unsigned char* costs, float* potential, float prev_pote
         return;
 
     potential[next_i] = p_calc_->calculatePotential(potential, costs[next_i] + neutral_cost_, next_i, prev_potential);
+    int x = next_i % nx_, y = next_i / nx_;
+    float distance = abs(end_x - x) + abs(end_y - y);
+
+    queue_.push_back(Index(next_i, potential[next_i] + distance * neutral_cost_));
+    std::push_heap(queue_.begin(), queue_.end(), greater1());
+}
+
+void AStarExpansion::addWithDirectionalCheck(unsigned char* costs, float* potential, float prev_potential, int next_i, 
+                                           int end_x, int end_y, int from_x, int from_y, int to_x, int to_y) {
+    // Check directional constraints first
+    if (directional_layer_ && !isDirectionAllowed(from_x, from_y, to_x, to_y)) {
+        return;  // Direction not allowed, skip this neighbor
+    }
+    
+    if (next_i < 0 || next_i >= ns_)
+        return;
+
+    if (potential[next_i] < POT_HIGH)
+        return;
+
+    if(costs[next_i] >= lethal_cost_ && !(unknown_ && costs[next_i] == costmap_2d::NO_INFORMATION))
+        return;
+
+    // Apply directional penalty to cost
+    float directional_penalty = getDirectionalPenalty(from_x, from_y, to_x, to_y);
+    float adjusted_cost = (costs[next_i] + neutral_cost_) * directional_penalty;
+    
+    potential[next_i] = p_calc_->calculatePotential(potential, adjusted_cost, next_i, prev_potential);
     int x = next_i % nx_, y = next_i / nx_;
     float distance = abs(end_x - x) + abs(end_y - y);
 

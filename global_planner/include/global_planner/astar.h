@@ -68,6 +68,8 @@ class AStarExpansion : public Expander {
                                 float* potential);
     private:
         void add(unsigned char* costs, float* potential, float prev_potential, int next_i, int end_x, int end_y);
+        void addWithDirectionalCheck(unsigned char* costs, float* potential, float prev_potential, int next_i, 
+                                   int end_x, int end_y, int from_x, int from_y, int to_x, int to_y);
         std::vector<Index> queue_;
 };
 

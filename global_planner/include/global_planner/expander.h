@@ -40,14 +40,16 @@
 #include <global_planner/potential_calculator.h>
 #include <global_planner/planner_core.h>
 
+// Forward declaration for DirectionalLayer
+namespace costmap_2d {
+    class DirectionalLayer;
+}
+
 namespace global_planner {
 
 class Expander {
     public:
-        Expander(PotentialCalculator* p_calc, int nx, int ny) :
-                unknown_(true), lethal_cost_(253), neutral_cost_(50), factor_(3.0), p_calc_(p_calc) {
-            setSize(nx, ny);
-        }
+        Expander(PotentialCalculator* p_calc, int nx, int ny);
         virtual ~Expander() {}
         virtual bool calculatePotentials(unsigned char* costs, double start_x, double start_y, double end_x, double end_y,
                                         int cycles, float* potential) = 0;
@@ -74,6 +76,20 @@ class Expander {
         void setHasUnknown(bool unknown) {
             unknown_ = unknown;
         }
+        
+        // DirectionalLayer support
+        void setDirectionalLayer(costmap_2d::DirectionalLayer* directional_layer) {
+            directional_layer_ = directional_layer;
+        }
+        void setDirectionalPenaltyFactor(double penalty_factor) {
+            directional_penalty_factor_ = penalty_factor;
+        }
+        void setOnewayStrictMode(bool strict_mode) {
+            oneway_strict_mode_ = strict_mode;
+        }
+        void setDirectionalStrictMode(bool strict_mode) {
+            oneway_strict_mode_ = strict_mode;
+        }
 
         void clearEndpoint(unsigned char* costs, float* potential, int gx, int gy, int s){
             int startCell = toIndex(gx, gy);
@@ -88,6 +104,15 @@ class Expander {
             }
             }
         }
+        
+        // Check if movement direction is allowed by DirectionalLayer
+        bool isDirectionAllowed(int from_x, int from_y, int to_x, int to_y);
+        
+        // Get directional penalty multiplier for movement
+        float getDirectionalPenalty(int from_x, int from_y, int to_x, int to_y);
+        
+        // Check if direction should be treated as lethal (strict mode)
+        bool isDirectionLethal(int from_x, int from_y, int to_x, int to_y);
 
     protected:
         inline int toIndex(int x, int y) {
@@ -100,6 +125,11 @@ class Expander {
         int cells_visited_;
         float factor_;
         PotentialCalculator* p_calc_;
+        
+        // DirectionalLayer integration
+        costmap_2d::DirectionalLayer* directional_layer_;
+        double directional_penalty_factor_;
+        bool oneway_strict_mode_;
 
 };
 

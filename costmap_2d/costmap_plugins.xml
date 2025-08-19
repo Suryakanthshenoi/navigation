@@ -12,6 +12,8 @@
     <class type="costmap_2d::VoxelLayer"     base_class_type="costmap_2d::Layer">
       <description>Similar to obstacle costmap, but uses 3D voxel grid to store data.</description>
     </class>
+    <class type="costmap_2d::DirectionalLayer" base_class_type="costmap_2d::Layer">
+      <description>Stores directional movement preferences for each grid cell using 8-bit masks. Does not modify costs, only provides metadata for planners.</description>
+    </class>
   </library>
 </class_libraries>
-

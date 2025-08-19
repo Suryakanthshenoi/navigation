@@ -201,31 +201,46 @@ inline void DijkstraExpansion::updateCell(unsigned char* costs, float* potential
 
     // now add affected neighbors to priority blocks
     if (pot < potential[n]) {
+        // Calculate neighbor positions
+        int current_x = n % nx_;
+        int current_y = n / nx_;
+        
         float le = INVSQRT2 * (float)getCost(costs, n - 1);
-        float re = INVSQRT2 * (float)getCost(costs, n + 1);
+        float re = INVSQRT2 * (float)getCost(costs, n + 1);  
         float ue = INVSQRT2 * (float)getCost(costs, n - nx_);
         float de = INVSQRT2 * (float)getCost(costs, n + nx_);
+        
+        // Apply directional penalties
+        if (directional_layer_) {
+            le *= getDirectionalPenalty(current_x, current_y, current_x - 1, current_y);  // West
+            re *= getDirectionalPenalty(current_x, current_y, current_x + 1, current_y);  // East
+            ue *= getDirectionalPenalty(current_x, current_y, current_x, current_y + 1);  // North
+            de *= getDirectionalPenalty(current_x, current_y, current_x, current_y - 1);  // South
+        }
+        
         potential[n] = pot;
         //ROS_INFO("UPDATE %d %d %d %f", n, n%nx, n/nx, potential[n]);
         if (pot < threshold_)    // low-cost buffer block
                 {
-            if (potential[n - 1] > pot + le)
+            // Check directional constraints - treat disallowed directions as lethal
+            if (potential[n - 1] > pot + le && !isDirectionLethal(current_x, current_y, current_x - 1, current_y))
                 push_next(n-1);
-            if (potential[n + 1] > pot + re)
+            if (potential[n + 1] > pot + re && !isDirectionLethal(current_x, current_y, current_x + 1, current_y))
                 push_next(n+1);
-            if (potential[n - nx_] > pot + ue)
+            if (potential[n - nx_] > pot + ue && !isDirectionLethal(current_x, current_y, current_x, current_y + 1))
                 push_next(n-nx_);
-            if (potential[n + nx_] > pot + de)
+            if (potential[n + nx_] > pot + de && !isDirectionLethal(current_x, current_y, current_x, current_y - 1))
                 push_next(n+nx_);
         } else            // overflow block
         {
-            if (potential[n - 1] > pot + le)
+            // Check directional constraints - treat disallowed directions as lethal  
+            if (potential[n - 1] > pot + le && !isDirectionLethal(current_x, current_y, current_x - 1, current_y))
                 push_over(n-1);
-            if (potential[n + 1] > pot + re)
+            if (potential[n + 1] > pot + re && !isDirectionLethal(current_x, current_y, current_x + 1, current_y))
                 push_over(n+1);
-            if (potential[n - nx_] > pot + ue)
+            if (potential[n - nx_] > pot + ue && !isDirectionLethal(current_x, current_y, current_x, current_y + 1))
                 push_over(n-nx_);
-            if (potential[n + nx_] > pot + de)
+            if (potential[n + nx_] > pot + de && !isDirectionLethal(current_x, current_y, current_x, current_y - 1))
                 push_over(n+nx_);
         }
     }

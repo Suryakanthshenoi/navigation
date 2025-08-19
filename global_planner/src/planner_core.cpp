@@ -39,6 +39,8 @@
 #include <pluginlib/class_list_macros.hpp>
 #include <costmap_2d/cost_values.h>
 #include <costmap_2d/costmap_2d.h>
+#include <costmap_2d/directional_layer.h>
+#include <costmap_2d/layered_costmap.h>
 
 #include <global_planner/dijkstra.h>
 #include <global_planner/astar.h>
@@ -67,9 +69,9 @@ void GlobalPlanner::outlineMap(unsigned char* costarr, int nx, int ny, unsigned 
 }
 
 GlobalPlanner::GlobalPlanner() :
-        costmap_(NULL), initialized_(false), allow_unknown_(true),
+        costmap_(NULL), costmap_ros_(NULL), initialized_(false), allow_unknown_(true),
         p_calc_(NULL), planner_(NULL), path_maker_(NULL), orientation_filter_(NULL),
-        potential_array_(NULL) {
+        potential_array_(NULL), directional_layer_(NULL), use_directional_constraints_(false), directional_penalty_factor_(2.0) {
 }
 
 GlobalPlanner::GlobalPlanner(std::string name, costmap_2d::Costmap2D* costmap, std::string frame_id) :
@@ -90,6 +92,7 @@ GlobalPlanner::~GlobalPlanner() {
 }
 
 void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2DROS* costmap_ros) {
+    costmap_ros_ = costmap_ros;  // Store for accessing plugins
     initialize(name, costmap_ros->getCostmap(), costmap_ros->getGlobalFrameID());
 }
 
@@ -145,6 +148,24 @@ void GlobalPlanner::initialize(std::string name, costmap_2d::Costmap2D* costmap,
         private_nh.param("default_tolerance", default_tolerance_, 0.0);
         private_nh.param("publish_scale", publish_scale_, 100);
         private_nh.param("outline_map", outline_map_, true);
+        
+        // DirectionalLayer parameters
+        private_nh.param("use_directional_constraints", use_directional_constraints_, true);
+        private_nh.param("directional_penalty_factor", directional_penalty_factor_, 200.0);
+        bool oneway_strict_mode = false;
+        private_nh.param("oneway_strict_mode", oneway_strict_mode, true);
+        
+        // Get DirectionalLayer from costmap plugins
+        directional_layer_ = getDirectionalLayer();
+        if (directional_layer_ && use_directional_constraints_) {
+            ROS_INFO("GlobalPlanner: DirectionalLayer found - directional constraints enabled (strict: %s)", 
+                     oneway_strict_mode ? "true" : "false");
+            planner_->setDirectionalLayer(directional_layer_);
+            planner_->setDirectionalPenaltyFactor(directional_penalty_factor_);
+            planner_->setOnewayStrictMode(oneway_strict_mode);
+        } else if (use_directional_constraints_) {
+            ROS_WARN("GlobalPlanner: DirectionalLayer not found but directional constraints requested");
+        }
 
         make_plan_srv_ = private_nh.advertiseService("make_plan", &GlobalPlanner::makePlanService, this);
 
@@ -167,6 +188,30 @@ void GlobalPlanner::reconfigureCB(global_planner::GlobalPlannerConfig& config, u
     publish_potential_ = config.publish_potential;
     orientation_filter_->setMode(config.orientation_mode);
     orientation_filter_->setWindowSize(config.orientation_window_size);
+}
+
+costmap_2d::DirectionalLayer* GlobalPlanner::getDirectionalLayer() {
+    if (!costmap_ros_) {
+        return NULL;
+    }
+    
+    // Get layered costmap to access plugins
+    costmap_2d::LayeredCostmap* layered_costmap = costmap_ros_->getLayeredCostmap();
+    if (!layered_costmap) {
+        return NULL;
+    }
+    
+    // Find DirectionalLayer plugin
+    std::vector<boost::shared_ptr<costmap_2d::Layer> >* plugins = layered_costmap->getPlugins();
+    for (auto& plugin : *plugins) {
+        costmap_2d::DirectionalLayer* directional_layer = 
+            dynamic_cast<costmap_2d::DirectionalLayer*>(plugin.get());
+        if (directional_layer) {
+            return directional_layer;
+        }
+    }
+    
+    return NULL;
 }
 
 void GlobalPlanner::clearRobotCell(const geometry_msgs::PoseStamped& global_pose, unsigned int mx, unsigned int my) {

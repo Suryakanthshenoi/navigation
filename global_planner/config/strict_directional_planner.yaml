@@ -1,0 +1,56 @@
+# Global Planner Configuration with Strict Directional Constraints
+# 
+# This configuration enables the DirectionalLayer integration with strict one-way enforcement
+# When oneway_strict_mode is true, disallowed directions are treated as lethal obstacles
+
+global_planner:
+  # Basic planner settings
+  allow_unknown: true
+  use_dijkstra: true
+  use_quadratic: true  
+  use_grid_path: false
+  
+  # DirectionalLayer integration
+  use_directional_constraints: true     # Enable directional constraints
+  oneway_strict_mode: true             # STRICT: Treat disallowed directions as lethal
+  directional_penalty_factor: 2.0      # Only used when oneway_strict_mode=false
+  
+  # Cost settings
+  lethal_cost: 253
+  neutral_cost: 50
+  cost_factor: 3.0
+  
+  # Orientation filtering
+  orientation_mode: 1
+  orientation_window_size: 1
+  
+  # Publishing
+  publish_potential: false
+  publish_scale: 100
+
+# Example costmap configuration with DirectionalLayer
+costmap:
+  global_frame: map
+  robot_base_frame: base_link
+  
+  plugins:
+    - {name: static_layer, type: "costmap_2d::StaticLayer"}
+    - {name: directional_layer, type: "costmap_2d::DirectionalLayer"}
+    - {name: inflation_layer, type: "costmap_2d::InflationLayer"}
+  
+  # DirectionalLayer settings
+  directional_layer:
+    enabled: true
+    default_mask: 255                    # All directions allowed by default
+    zones_file: ""                       # Load zones from YAML file (optional)
+    visualization_topic: "directional_zones"
+    
+  # Other layers
+  static_layer:
+    enabled: true
+    map_topic: "/map"
+    
+  inflation_layer:
+    enabled: true
+    inflation_radius: 0.5
+    cost_scaling_factor: 10.0
